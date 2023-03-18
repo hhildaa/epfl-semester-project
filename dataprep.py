@@ -6,43 +6,43 @@ import numpy as np
 from zipfile import ZipFile
 from typing import Tuple, Dict, Any
 
-def read_file(source_num) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """
-    Reads the SAV file from the source zip archive, and returns it as a dataframe and a dictionary of metadata.
+# def read_file(source_num) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+#     """
+#     Reads the SAV file from the source zip archive, and returns it as a dataframe and a dictionary of metadata.
     
-    Returns:
-        A tuple containing the dataframe and the metadata dictionary.
-    """
-    if source_num == 1:
-        source = "gwp_data/Gallup_World_Poll_Wave_1_5_091622.zip"
-        num = '1_5_091622'
-    elif source_num == 2:
-        source = "gwp_data/Gallup_World_Poll_Wave_6_10_091622.zip"
-        num = '6_10_091622'
-    elif source_num == 3:
-        source = "gwp_data/Gallup_World_Poll_Wave_11_17_091622.zip"
-        num = '11_17_091622'
+#     Returns:
+#         A tuple containing the dataframe and the metadata dictionary.
+#     """
+#     if source_num == 1:
+#         source = "gwp_data/Gallup_World_Poll_Wave_1_5_091622.zip"
+#         num = '1_5_091622'
+#     elif source_num == 2:
+#         source = "gwp_data/Gallup_World_Poll_Wave_6_10_091622.zip"
+#         num = '6_10_091622'
+#     elif source_num == 3:
+#         source = "gwp_data/Gallup_World_Poll_Wave_11_17_091622.zip"
+#         num = '11_17_091622'
 
-    # save file to a temporary folder
-    with ZipFile(source, 'r') as zipObject:
-        listOfFileNames = zipObject.namelist()
-        for fileName in listOfFileNames:
-            if fileName.endswith('.sav'):
-                # Extract a single file from zip
-                if os.path.exists(f'temp_sav/{fileName}')==False:
-                    zipObject.extract(fileName, 'temp_sav')
-                    print('All the sav files are extracted')
-                    # open file
-                    df, meta = pyreadstat.read_sav(f'temp_sav/{fileName}') 
-                else: 
-                    # open file
-                    df, meta = pyreadstat.read_sav(f'temp_sav/{fileName}') 
+#     # save file to a temporary folder
+#     with ZipFile(source, 'r') as zipObject:
+#         listOfFileNames = zipObject.namelist()
+#         for fileName in listOfFileNames:
+#             if fileName.endswith('.sav'):
+#                 # Extract a single file from zip
+#                 if os.path.exists(f'temp_sav/{fileName}')==False:
+#                     zipObject.extract(fileName, 'temp_sav')
+#                     print('All the sav files are extracted')
+#                     # open file
+#                     df, meta = pyreadstat.read_sav(f'temp_sav/{fileName}') 
+#                 else: 
+#                     # open file
+#                     df, meta = pyreadstat.read_sav(f'temp_sav/{fileName}') 
 
-    # rename the columns to more readable names
-    df.columns=meta.column_labels
+#     # rename the columns to more readable names
+#     df.columns=meta.column_labels
 
-    print('Data is saved in df and meta variables with readable column names')
-    return df, meta
+#     print('Data is saved in df and meta variables with readable column names')
+#     return df, meta
 
 def remove_unwanted(df: pd.DataFrame, df_meta: pd.DataFrame) -> pd.DataFrame:
     """
@@ -138,7 +138,7 @@ def new_region_column(df: pd.DataFrame) -> pd.DataFrame:
     regions = list([text[1:-3] for text in regions])
 
     # impute missing values, 
-    df["Region"] = df[list(set(regions).intersection(df.columns))].sum(axis=1, min_count=1)
+    # df["Region"] = df[list(set(regions).intersection(df.columns))].sum(axis=1, min_count=1)
 
     # drop the unwanted hand-picked columns
     drop_cols = list(set(df.columns).intersection(set(regions)))
@@ -160,16 +160,11 @@ def rename_with_codes(df: pd.DataFrame, meta) -> pd.DataFrame:
     Returns:
         The dataframe with the renamed columns.
     """
+    # meta.column_names_to_labels["Region"] = "Region"
 
-    def get_key(dict, val):
-        for key, value in dict.items():
-            if val == value:
-                return key
-
-    meta.column_names_to_labels["Region"] = "Region"
     # rename the columns to more readable names
-    df.columns=(get_key(meta.column_names_to_labels, val)+": "+ val for val in df.columns)
-
+    df.columns=(val+ ": " + meta.column_names_to_labels[val] for val in df.columns)
+ 
     print("Codes added to the feature names.")
     return df
 
@@ -243,26 +238,22 @@ def impute_missing_by_type(df: pd.DataFrame, df_meta: pd.DataFrame) -> pd.DataFr
     print("Missing values are imputed.")
     return df
 
+def preprocess_gwp_asp(df, meta, df_meta):
 
-def save_files(df: pd.DataFrame, num: int, foldername: str, name: str): 
-    if num == 1:
-        df.to_pickle(f"gwp_data/{foldername}/clean_data_from8to12_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2008].to_pickle(f"gwp_data/{foldername}/clean_data_2008_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2009].to_pickle(f"gwp_data/{foldername}/clean_data_2009_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2010].to_pickle(f"gwp_data/{foldername}/clean_data_2010_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2011].to_pickle(f"gwp_data/{foldername}/clean_data_2011_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2012].to_pickle(f"gwp_data/{foldername}/clean_data_2012_{name}")
-    if num == 2:
-        df.to_pickle(f"gwp_data/{foldername}/clean_data_from13to17_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2013].to_pickle(f"gwp_data/{foldername}/clean_data_2013_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2014].to_pickle(f"gwp_data/{foldername}/clean_data_2014_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2015].to_pickle(f"gwp_data/{foldername}/clean_data_2015_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2016].to_pickle(f"gwp_data/{foldername}/clean_data_2016_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2017].to_pickle(f"gwp_data/{foldername}/clean_data_2017_{name}")
-    if num == 3:
-        df.to_pickle(f"gwp_data/{foldername}/clean_data_from18to22_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2018].to_pickle(f"gwp_data/{foldername}/clean_data_2018_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2019].to_pickle(f"gwp_data/{foldername}/clean_data_2019_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2020].to_pickle(f"gwp_data/{foldername}/clean_data_2020_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2021].to_pickle(f"gwp_data/{foldername}/clean_data_2021_{name}")
-        df[df["YEAR_WAVE: Wave Year"]== 2022].to_pickle(f"gwp_data/{foldername}/clean_data_2022_{name}")
+    # Regions
+    df = new_region_column(df)
+
+    # Renaming the features
+    df = rename_with_codes(df, meta)
+
+    # Removing unwanted columns
+    df = remove_unwanted(df, df_meta)
+
+    # Remove questions which are not asked in all countries. 
+    df = remove_notallcountry(df)
+    try:
+        df.drop('INDEX_CA: Community Attachment Index', axis=1, inplace = True)
+    except:
+        pass
+    
+    return df
